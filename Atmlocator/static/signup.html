@@ -1,0 +1,198 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Ward</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        #map {
+            height: 400px;
+        }
+        #loading {
+            display: none;
+            text-align: center;
+        }
+        #loading img {
+            width: 100px; /* Increase size */
+            height: 100px; /* Ensure width and height are equal */
+            border-radius: 50%; /* Make it circular */
+        }
+        .navbar {
+            background-color: #333;
+        }
+        .navbar-brand {
+            color: white;
+        }
+        .navbar-nav {
+            margin-left: auto;
+        }
+        .navbar-nav .nav-link {
+            color: white;
+        }
+        .navbar-nav .nav-link:hover {
+            color: #fff;
+        }
+        #content {
+            display: flex;
+            flex-direction: row;
+        }
+        #map-container {
+            flex: 1;
+            padding: 0 10px;
+        }
+        #statistics-container {
+            flex: 1;
+            padding: 0 10px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="#">ATM Locator</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">About</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Contact</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <h2 class="text-center mb-4">Select Zone</h2>
+        <div class="row">
+            <div class="col-md-12">
+                <form id="wardForm" method="post" action="{% url 'ward_population' %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="wardSelect" class="form-label">Select Ward:</label>
+                        <select class="form-select" id="wardSelect" name="ward">
+                            <option value="">-- Select Ward --</option>
+                            {% for ward in wards %}
+                            <option value="{{ ward }}">{{ ward }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Search</button>
+                </form>
+                <div id="loading" class="mt-4">
+                    <img src="{% static 'myapp\images\PVtR.gif' %}" alt="Loading...">
+                    <p>Please wait...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="content" class="container mt-5">
+        <div id="map-container">
+            <div id="map"></div>
+        </div>
+        <div id="statistics-container">
+            <div id="population"></div>
+            <canvas id="statisticsChart"></canvas>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        document.getElementById('wardForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            var form = this;
+            var formData = new FormData(form);
+
+            // Show loading animation
+            document.getElementById('loading').style.display = 'block';
+
+            // AJAX request to submit form
+            fetch(form.action, {
+                method: form.method,
+                body: formData,
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide loading animation
+                document.getElementById('loading').style.display = 'none';
+
+                // Display population information
+                document.getElementById('population').innerHTML = '<h4>Population for ' + data.selected_ward + ': ' + data.population + '</h4>';
+
+                // Display Leaflet map with marker at priority ward location
+                var map = L.map('map').setView([data.latitude, data.longitude], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                }).addTo(map);
+                L.marker([data.latitude, data.longitude]).addTo(map)
+                    .bindPopup('Priority Ward: ' + data.selected_ward)
+                    .openPopup();
+
+                // Display statistical chart
+                displayStatisticsChart(data.statistics);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+
+        function displayStatisticsChart(statisticsData) {
+            var ctx = document.getElementById('statisticsChart').getContext('2d');
+            var statisticsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Bus Stops', 'Hospitals', 'Colleges', 'Malls', 'ATMs'],
+                    datasets: [{
+                        label: 'Counts',
+                        data: statisticsData,
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.2)',
+                            'rgba(54, 162, 235, 0.2)',
+                            'rgba(255, 206, 86, 0.2)',
+                            'rgba(75, 192, 192, 0.2)',
+                            'rgba(153, 102, 255, 0.2)'
+                        ],
+                        borderColor: [
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 206, 86, 1)',
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(153, 102, 255, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
+``
+
+
+

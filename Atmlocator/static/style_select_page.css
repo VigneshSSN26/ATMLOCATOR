@@ -1,0 +1,46 @@
+body {
+    background:url(tamil_nadu.png);
+    padding-top: 60px;
+    background-repeat: no-repeat;
+    background-size:65%;
+    background-position-x: center;
+}
+
+.container {
+    max-width: 400px;
+    border-radius: 10px;
+    box-shadow: 5px 10px 10px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin: 100px auto;
+    backdrop-filter: blur(10%);
+}
+
+h2 {
+    text-align: center;
+    color: #333;
+}
+
+.form-label {
+    font-weight: bold;
+}
+
+.form-select {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ced4da;
+    border-radius: 5px;
+    background-color: #f8f9fa;
+}
+
+.btn-primary {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    background-color: #007bff;
+    border: none;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+}
