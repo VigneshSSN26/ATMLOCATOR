@@ -1,6 +1,6 @@
-Flask
+Django
 pandas
 numpy
-requests
 geopy
 folium
+requests
